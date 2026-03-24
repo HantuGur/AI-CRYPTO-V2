@@ -1,0 +1,56 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+@layer base {
+  :root {
+    --font-sans: 'IBM Plex Sans', sans-serif;
+    --font-mono: 'IBM Plex Mono', monospace;
+
+    /* Background layers */
+    --bg:   #0d0f14;
+    --bg-2: #13161e;
+    --bg-3: #1a1e28;
+
+    /* Borders */
+    --border:   #242836;
+    --border-2: #2e3448;
+
+    /* Text */
+    --text-primary:   #e8eaf0;
+    --text-secondary: #8b90a0;
+    --text-muted:     #545a6e;
+
+    /* Accent */
+    --accent:     #4a7dff;
+    --accent-dim: #1e2d5a;
+
+    /* Risk levels */
+    --risk-high:       #e05555;
+    --risk-high-dim:   #3a1818;
+    --risk-medium:     #d97706;
+    --risk-medium-dim: #2d1f06;
+    --risk-low:        #22c55e;
+    --risk-low-dim:    #0d2e1a;
+
+    /* Verification statuses */
+    --verified:     #4a7dff;
+    --verified-dim: #1a2545;
+    --inferred:     #a78bfa;
+    --inferred-dim: #231a3a;
+    --unknown:      #6b7280;
+    --unknown-dim:  #1a1c22;
+  }
+
+  html {
+    background-color: var(--bg);
+    color: var(--text-primary);
+    font-family: var(--font-sans);
+    -webkit-font-smoothing: antialiased;
+  }
+
+  /* Minimal scrollbar */
+  ::-webkit-scrollbar        { width: 5px; }
+  ::-webkit-scrollbar-track  { background: var(--bg); }
+  ::-webkit-scrollbar-thumb  { background: var(--border-2); border-radius: 3px; }
+}

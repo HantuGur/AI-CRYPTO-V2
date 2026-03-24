@@ -1,0 +1,1626 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>DD Copilot — Crypto Due Diligence Assistant</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;500&family=IBM+Plex+Sans:ital,wght@0,300;0,400;0,500;0,600;1,400&display=swap" rel="stylesheet">
+<style>
+  :root {
+    --bg: #0d0f14;
+    --bg-2: #13161e;
+    --bg-3: #1a1e28;
+    --border: #242836;
+    --border-2: #2e3448;
+    --text-primary: #e8eaf0;
+    --text-secondary: #8b90a0;
+    --text-muted: #545a6e;
+    --accent: #4a7dff;
+    --accent-dim: #1e2d5a;
+    --risk-high: #e05555;
+    --risk-high-dim: #3a1818;
+    --risk-medium: #d97706;
+    --risk-medium-dim: #2d1f06;
+    --risk-low: #22c55e;
+    --risk-low-dim: #0d2e1a;
+    --verified: #4a7dff;
+    --verified-dim: #1a2545;
+    --inferred: #a78bfa;
+    --inferred-dim: #231a3a;
+    --unknown: #6b7280;
+    --unknown-dim: #1a1c22;
+    --mono: 'IBM Plex Mono', monospace;
+    --sans: 'IBM Plex Sans', sans-serif;
+  }
+
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  
+  body {
+    font-family: var(--sans);
+    background: var(--bg);
+    color: var(--text-primary);
+    min-height: 100vh;
+    line-height: 1.6;
+  }
+
+  /* ─── SCROLLBAR ─── */
+  ::-webkit-scrollbar { width: 6px; }
+  ::-webkit-scrollbar-track { background: var(--bg); }
+  ::-webkit-scrollbar-thumb { background: var(--border-2); border-radius: 3px; }
+
+  /* ─── VIEWS ─── */
+  .view { display: none; min-height: 100vh; }
+  .view.active { display: block; }
+
+  /* ─── NAV ─── */
+  nav {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 1.25rem 2rem;
+    border-bottom: 1px solid var(--border);
+    position: sticky;
+    top: 0;
+    background: var(--bg);
+    z-index: 100;
+  }
+  .logo {
+    font-family: var(--mono);
+    font-size: 0.9rem;
+    color: var(--text-primary);
+    letter-spacing: 0.05em;
+    display: flex;
+    align-items: center;
+    gap: 0.6rem;
+  }
+  .logo-dot {
+    width: 8px; height: 8px;
+    border-radius: 50%;
+    background: var(--accent);
+    animation: pulse 3s infinite;
+  }
+  @keyframes pulse {
+    0%, 100% { opacity: 1; }
+    50% { opacity: 0.4; }
+  }
+  .nav-cta {
+    font-family: var(--mono);
+    font-size: 0.75rem;
+    padding: 0.5rem 1.1rem;
+    border: 1px solid var(--accent);
+    color: var(--accent);
+    background: transparent;
+    cursor: pointer;
+    letter-spacing: 0.06em;
+    transition: all 0.2s;
+    text-transform: uppercase;
+  }
+  .nav-cta:hover { background: var(--accent); color: #fff; }
+
+  /* ─── LANDING ─── */
+  .landing-hero {
+    max-width: 900px;
+    margin: 0 auto;
+    padding: 7rem 2rem 5rem;
+  }
+  .eyebrow {
+    font-family: var(--mono);
+    font-size: 0.7rem;
+    color: var(--accent);
+    letter-spacing: 0.15em;
+    text-transform: uppercase;
+    margin-bottom: 1.5rem;
+    display: flex;
+    align-items: center;
+    gap: 0.75rem;
+  }
+  .eyebrow::before {
+    content: '';
+    display: block;
+    width: 24px;
+    height: 1px;
+    background: var(--accent);
+  }
+  h1 {
+    font-size: clamp(2.5rem, 6vw, 4rem);
+    font-weight: 300;
+    line-height: 1.1;
+    letter-spacing: -0.02em;
+    margin-bottom: 1.75rem;
+    color: var(--text-primary);
+  }
+  h1 em {
+    font-style: italic;
+    color: var(--text-secondary);
+  }
+  .hero-sub {
+    font-size: 1.1rem;
+    color: var(--text-secondary);
+    max-width: 560px;
+    line-height: 1.7;
+    margin-bottom: 3rem;
+    font-weight: 300;
+  }
+  .hero-actions {
+    display: flex;
+    align-items: center;
+    gap: 1.5rem;
+    flex-wrap: wrap;
+  }
+  .btn-primary {
+    font-family: var(--mono);
+    font-size: 0.8rem;
+    padding: 0.875rem 2rem;
+    background: var(--accent);
+    color: #fff;
+    border: none;
+    cursor: pointer;
+    letter-spacing: 0.08em;
+    text-transform: uppercase;
+    transition: all 0.2s;
+    position: relative;
+    overflow: hidden;
+  }
+  .btn-primary::after {
+    content: '';
+    position: absolute;
+    inset: 0;
+    background: rgba(255,255,255,0.1);
+    opacity: 0;
+    transition: opacity 0.2s;
+  }
+  .btn-primary:hover::after { opacity: 1; }
+  .btn-secondary {
+    font-family: var(--mono);
+    font-size: 0.78rem;
+    color: var(--text-secondary);
+    background: none;
+    border: none;
+    cursor: pointer;
+    letter-spacing: 0.05em;
+    text-decoration: underline;
+    text-underline-offset: 3px;
+    transition: color 0.2s;
+  }
+  .btn-secondary:hover { color: var(--text-primary); }
+
+  /* ─── HOW IT WORKS ─── */
+  .how-section {
+    max-width: 900px;
+    margin: 0 auto;
+    padding: 4rem 2rem;
+    border-top: 1px solid var(--border);
+  }
+  .section-label {
+    font-family: var(--mono);
+    font-size: 0.68rem;
+    color: var(--text-muted);
+    letter-spacing: 0.12em;
+    text-transform: uppercase;
+    margin-bottom: 2.5rem;
+  }
+  .steps-grid {
+    display: grid;
+    grid-template-columns: repeat(3, 1fr);
+    gap: 1.5px;
+    background: var(--border);
+  }
+  .step {
+    background: var(--bg);
+    padding: 2rem;
+  }
+  .step-num {
+    font-family: var(--mono);
+    font-size: 0.65rem;
+    color: var(--accent);
+    margin-bottom: 1rem;
+    letter-spacing: 0.1em;
+  }
+  .step h3 {
+    font-size: 0.95rem;
+    font-weight: 500;
+    margin-bottom: 0.6rem;
+    color: var(--text-primary);
+  }
+  .step p {
+    font-size: 0.85rem;
+    color: var(--text-secondary);
+    line-height: 1.6;
+  }
+
+  /* ─── WHAT IT IS / ISN'T ─── */
+  .is-isnt {
+    max-width: 900px;
+    margin: 0 auto;
+    padding: 4rem 2rem;
+    border-top: 1px solid var(--border);
+  }
+  .is-isnt-grid {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 1.5px;
+    background: var(--border);
+  }
+  .is-col, .isnt-col {
+    background: var(--bg);
+    padding: 2rem;
+  }
+  .col-head {
+    font-family: var(--mono);
+    font-size: 0.7rem;
+    letter-spacing: 0.1em;
+    text-transform: uppercase;
+    margin-bottom: 1.25rem;
+  }
+  .is-col .col-head { color: var(--risk-low); }
+  .isnt-col .col-head { color: var(--risk-high); }
+  .check-list { list-style: none; }
+  .check-list li {
+    font-size: 0.85rem;
+    color: var(--text-secondary);
+    padding: 0.4rem 0;
+    display: flex;
+    align-items: flex-start;
+    gap: 0.6rem;
+    border-bottom: 1px solid var(--border);
+  }
+  .check-list li:last-child { border-bottom: none; }
+  .check-list li::before {
+    content: '✓';
+    color: var(--risk-low);
+    font-size: 0.75rem;
+    flex-shrink: 0;
+    margin-top: 2px;
+  }
+  .isnt-col .check-list li::before {
+    content: '×';
+    color: var(--risk-high);
+  }
+
+  /* ─── DISCLAIMER BAR ─── */
+  .disclaimer-bar {
+    background: var(--bg-3);
+    border-top: 1px solid var(--border);
+    border-bottom: 1px solid var(--border);
+    padding: 1rem 2rem;
+    font-size: 0.75rem;
+    color: var(--text-muted);
+    text-align: center;
+    line-height: 1.6;
+    font-family: var(--mono);
+  }
+
+  /* ─── ANALYZE VIEW ─── */
+  .analyze-container {
+    max-width: 640px;
+    margin: 0 auto;
+    padding: 5rem 2rem;
+  }
+  .analyze-header {
+    margin-bottom: 3rem;
+  }
+  .analyze-header h2 {
+    font-size: 2rem;
+    font-weight: 300;
+    letter-spacing: -0.02em;
+    margin-bottom: 0.5rem;
+  }
+  .analyze-header p {
+    color: var(--text-secondary);
+    font-size: 0.9rem;
+  }
+  .input-card {
+    background: var(--bg-2);
+    border: 1px solid var(--border);
+    padding: 2rem;
+  }
+  .field {
+    margin-bottom: 1.5rem;
+  }
+  .field label {
+    display: block;
+    font-family: var(--mono);
+    font-size: 0.68rem;
+    letter-spacing: 0.1em;
+    text-transform: uppercase;
+    color: var(--text-muted);
+    margin-bottom: 0.5rem;
+  }
+  .field input {
+    width: 100%;
+    background: var(--bg-3);
+    border: 1px solid var(--border);
+    color: var(--text-primary);
+    font-family: var(--mono);
+    font-size: 0.85rem;
+    padding: 0.75rem 1rem;
+    outline: none;
+    transition: border-color 0.2s;
+  }
+  .field input:focus { border-color: var(--accent); }
+  .field input::placeholder { color: var(--text-muted); }
+  .field-hint {
+    font-size: 0.72rem;
+    color: var(--text-muted);
+    margin-top: 0.4rem;
+    font-family: var(--mono);
+  }
+  .field-divider {
+    display: flex;
+    align-items: center;
+    gap: 1rem;
+    margin: 0.5rem 0;
+    color: var(--text-muted);
+    font-family: var(--mono);
+    font-size: 0.68rem;
+    letter-spacing: 0.1em;
+  }
+  .field-divider::before, .field-divider::after {
+    content: '';
+    flex: 1;
+    height: 1px;
+    background: var(--border);
+  }
+  .analyze-btn {
+    width: 100%;
+    font-family: var(--mono);
+    font-size: 0.8rem;
+    padding: 1rem;
+    background: var(--accent);
+    color: #fff;
+    border: none;
+    cursor: pointer;
+    letter-spacing: 0.1em;
+    text-transform: uppercase;
+    transition: opacity 0.2s;
+    margin-top: 0.5rem;
+  }
+  .analyze-btn:hover { opacity: 0.9; }
+  .analyze-notice {
+    margin-top: 1.5rem;
+    padding: 1rem;
+    background: var(--bg-3);
+    border-left: 2px solid var(--text-muted);
+    font-size: 0.78rem;
+    color: var(--text-muted);
+    line-height: 1.6;
+    font-family: var(--mono);
+  }
+
+  /* ─── LOADING VIEW ─── */
+  .loading-container {
+    max-width: 500px;
+    margin: 0 auto;
+    padding: 8rem 2rem;
+    text-align: center;
+  }
+  .loading-spinner {
+    width: 48px;
+    height: 48px;
+    border: 1px solid var(--border);
+    border-top-color: var(--accent);
+    border-radius: 50%;
+    animation: spin 1s linear infinite;
+    margin: 0 auto 2.5rem;
+  }
+  @keyframes spin { to { transform: rotate(360deg); } }
+  .loading-title {
+    font-size: 1.1rem;
+    font-weight: 400;
+    margin-bottom: 0.5rem;
+  }
+  .loading-subtitle {
+    font-size: 0.85rem;
+    color: var(--text-secondary);
+    margin-bottom: 3rem;
+  }
+  .loading-steps {
+    text-align: left;
+    border: 1px solid var(--border);
+    background: var(--bg-2);
+  }
+  .loading-step {
+    display: flex;
+    align-items: center;
+    gap: 1rem;
+    padding: 0.875rem 1.25rem;
+    border-bottom: 1px solid var(--border);
+    font-family: var(--mono);
+    font-size: 0.75rem;
+    color: var(--text-muted);
+    transition: all 0.4s;
+  }
+  .loading-step:last-child { border-bottom: none; }
+  .loading-step.done { color: var(--risk-low); }
+  .loading-step.active { color: var(--text-primary); }
+  .step-icon {
+    width: 16px;
+    height: 16px;
+    border-radius: 50%;
+    border: 1px solid currentColor;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 0.6rem;
+    flex-shrink: 0;
+  }
+  .loading-step.done .step-icon { background: var(--risk-low); border-color: var(--risk-low); color: #fff; }
+  .loading-step.active .step-icon { border-color: var(--accent); animation: ring 1s infinite; }
+  @keyframes ring {
+    0%, 100% { box-shadow: 0 0 0 0 rgba(74,125,255,0.4); }
+    50% { box-shadow: 0 0 0 4px rgba(74,125,255,0); }
+  }
+  .loading-caveat {
+    margin-top: 2rem;
+    font-family: var(--mono);
+    font-size: 0.68rem;
+    color: var(--text-muted);
+  }
+
+  /* ─── REPORT VIEW ─── */
+  .report-layout {
+    max-width: 860px;
+    margin: 0 auto;
+    padding: 3rem 2rem 6rem;
+  }
+  .report-nav {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    margin-bottom: 2.5rem;
+  }
+  .back-btn {
+    font-family: var(--mono);
+    font-size: 0.72rem;
+    color: var(--text-muted);
+    background: none;
+    border: none;
+    cursor: pointer;
+    letter-spacing: 0.06em;
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+    transition: color 0.2s;
+  }
+  .back-btn:hover { color: var(--text-primary); }
+  .export-btn {
+    font-family: var(--mono);
+    font-size: 0.72rem;
+    padding: 0.5rem 1rem;
+    border: 1px solid var(--border-2);
+    color: var(--text-secondary);
+    background: transparent;
+    cursor: pointer;
+    letter-spacing: 0.06em;
+    transition: all 0.2s;
+  }
+  .export-btn:hover { border-color: var(--accent); color: var(--accent); }
+
+  /* ─── REPORT HEADER ─── */
+  .report-header {
+    border: 1px solid var(--border);
+    background: var(--bg-2);
+    padding: 2rem;
+    margin-bottom: 1.5px;
+  }
+  .report-meta {
+    display: flex;
+    align-items: center;
+    gap: 1rem;
+    margin-bottom: 1rem;
+    flex-wrap: wrap;
+  }
+  .report-date {
+    font-family: var(--mono);
+    font-size: 0.68rem;
+    color: var(--text-muted);
+    letter-spacing: 0.06em;
+  }
+  .report-id {
+    font-family: var(--mono);
+    font-size: 0.68rem;
+    color: var(--text-muted);
+    border: 1px solid var(--border);
+    padding: 0.15rem 0.5rem;
+  }
+  .report-project-name {
+    font-size: 1.75rem;
+    font-weight: 300;
+    letter-spacing: -0.02em;
+    margin-bottom: 0.4rem;
+  }
+  .report-category-tag {
+    font-family: var(--mono);
+    font-size: 0.68rem;
+    color: var(--text-muted);
+    letter-spacing: 0.08em;
+    text-transform: uppercase;
+  }
+
+  /* ─── OUTCOME CARD ─── */
+  .outcome-card {
+    border: 1px solid var(--border);
+    padding: 1.75rem 2rem;
+    margin-bottom: 1.5px;
+    display: flex;
+    align-items: flex-start;
+    gap: 1.5rem;
+    background: var(--bg-2);
+  }
+  .outcome-badge-large {
+    font-family: var(--mono);
+    font-size: 0.65rem;
+    letter-spacing: 0.12em;
+    text-transform: uppercase;
+    padding: 0.4rem 0.8rem;
+    border: 1px solid;
+    flex-shrink: 0;
+    white-space: nowrap;
+  }
+  .outcome-verify { color: var(--risk-medium); border-color: var(--risk-medium); background: var(--risk-medium-dim); }
+  .outcome-caution { color: var(--risk-high); border-color: var(--risk-high); background: var(--risk-high-dim); }
+  .outcome-watch { color: var(--inferred); border-color: var(--inferred); background: var(--inferred-dim); }
+  .outcome-skip { color: var(--risk-high); border-color: var(--risk-high); background: var(--risk-high-dim); }
+  .outcome-text h4 {
+    font-size: 0.85rem;
+    font-weight: 500;
+    margin-bottom: 0.4rem;
+    color: var(--text-primary);
+  }
+  .outcome-text p {
+    font-size: 0.82rem;
+    color: var(--text-secondary);
+    line-height: 1.6;
+  }
+
+  /* ─── EXEC SUMMARY ─── */
+  .exec-summary {
+    border: 1px solid var(--border);
+    padding: 2rem;
+    background: var(--bg-2);
+    margin-bottom: 1.5px;
+  }
+  .section-title {
+    font-family: var(--mono);
+    font-size: 0.65rem;
+    color: var(--text-muted);
+    letter-spacing: 0.12em;
+    text-transform: uppercase;
+    margin-bottom: 1rem;
+    display: flex;
+    align-items: center;
+    gap: 0.75rem;
+  }
+  .section-title::after {
+    content: '';
+    flex: 1;
+    height: 1px;
+    background: var(--border);
+  }
+  .exec-summary p {
+    font-size: 0.9rem;
+    color: var(--text-secondary);
+    line-height: 1.75;
+  }
+
+  /* ─── RISK GRID ─── */
+  .risk-section-title {
+    font-family: var(--mono);
+    font-size: 0.65rem;
+    color: var(--text-muted);
+    letter-spacing: 0.12em;
+    text-transform: uppercase;
+    padding: 1.25rem 0 0.75rem;
+    display: flex;
+    align-items: center;
+    gap: 0.75rem;
+  }
+  .risk-section-title::after {
+    content: '';
+    flex: 1;
+    height: 1px;
+    background: var(--border);
+  }
+  .risk-grid {
+    display: grid;
+    gap: 1.5px;
+    background: var(--border);
+    margin-bottom: 1.5px;
+  }
+  .risk-card {
+    background: var(--bg-2);
+    padding: 1.5rem;
+    cursor: pointer;
+  }
+  .risk-card-header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    margin-bottom: 0.75rem;
+  }
+  .risk-card-left {
+    display: flex;
+    align-items: center;
+    gap: 0.75rem;
+  }
+  .risk-cat-name {
+    font-size: 0.88rem;
+    font-weight: 500;
+    color: var(--text-primary);
+  }
+  .risk-badge {
+    font-family: var(--mono);
+    font-size: 0.6rem;
+    letter-spacing: 0.1em;
+    text-transform: uppercase;
+    padding: 0.2rem 0.55rem;
+    border: 1px solid;
+  }
+  .risk-high { color: var(--risk-high); border-color: var(--risk-high); background: var(--risk-high-dim); }
+  .risk-medium { color: var(--risk-medium); border-color: var(--risk-medium); background: var(--risk-medium-dim); }
+  .risk-low { color: var(--risk-low); border-color: var(--risk-low); background: var(--risk-low-dim); }
+  .risk-unknown { color: var(--unknown); border-color: var(--unknown); background: var(--unknown-dim); }
+
+  .verification-label {
+    font-family: var(--mono);
+    font-size: 0.58rem;
+    letter-spacing: 0.1em;
+    text-transform: uppercase;
+    padding: 0.18rem 0.5rem;
+    border: 1px solid;
+  }
+  .vl-verified { color: var(--verified); border-color: var(--verified); background: var(--verified-dim); }
+  .vl-inferred { color: var(--inferred); border-color: var(--inferred); background: var(--inferred-dim); }
+  .vl-unknown { color: var(--unknown); border-color: var(--unknown); background: var(--unknown-dim); }
+
+  .risk-card-expand {
+    font-family: var(--mono);
+    font-size: 0.7rem;
+    color: var(--text-muted);
+    transition: transform 0.2s;
+    flex-shrink: 0;
+  }
+  .risk-card.open .risk-card-expand { transform: rotate(180deg); }
+  .risk-reasoning {
+    font-size: 0.83rem;
+    color: var(--text-secondary);
+    line-height: 1.7;
+    margin-bottom: 1rem;
+    padding-top: 0.25rem;
+  }
+  .findings-list {
+    list-style: none;
+    border-top: 1px solid var(--border);
+    padding-top: 0.75rem;
+  }
+  .finding-item {
+    display: flex;
+    gap: 0.75rem;
+    align-items: flex-start;
+    padding: 0.4rem 0;
+    font-size: 0.8rem;
+    color: var(--text-secondary);
+    border-bottom: 1px solid var(--border);
+  }
+  .finding-item:last-child { border-bottom: none; }
+  .finding-dot {
+    width: 5px; height: 5px;
+    border-radius: 50%;
+    background: var(--text-muted);
+    flex-shrink: 0;
+    margin-top: 6px;
+  }
+  .risk-body { display: none; }
+  .risk-card.open .risk-body { display: block; }
+
+  /* ─── CLAIMS TABLE ─── */
+  .claims-section {
+    margin-bottom: 1.5px;
+  }
+  .claims-table {
+    width: 100%;
+    border-collapse: collapse;
+    background: var(--bg-2);
+    border: 1px solid var(--border);
+  }
+  .claims-table th {
+    font-family: var(--mono);
+    font-size: 0.62rem;
+    letter-spacing: 0.1em;
+    text-transform: uppercase;
+    color: var(--text-muted);
+    padding: 0.75rem 1rem;
+    text-align: left;
+    border-bottom: 1px solid var(--border);
+    font-weight: 400;
+    background: var(--bg-3);
+  }
+  .claims-table td {
+    padding: 0.75rem 1rem;
+    font-size: 0.8rem;
+    color: var(--text-secondary);
+    border-bottom: 1px solid var(--border);
+    vertical-align: top;
+    line-height: 1.5;
+  }
+  .claims-table tr:last-child td { border-bottom: none; }
+  .claims-table tr:hover td { background: var(--bg-3); }
+  .claim-text { color: var(--text-primary); font-size: 0.83rem; }
+
+  /* ─── SOURCES / EVIDENCE ─── */
+  .sources-section {
+    margin-bottom: 1.5px;
+  }
+  .source-list {
+    border: 1px solid var(--border);
+    background: var(--bg-2);
+  }
+  .source-card {
+    padding: 1.25rem 1.5rem;
+    border-bottom: 1px solid var(--border);
+    display: grid;
+    grid-template-columns: auto 1fr auto;
+    gap: 1rem;
+    align-items: start;
+  }
+  .source-card:last-child { border-bottom: none; }
+  .source-type-tag {
+    font-family: var(--mono);
+    font-size: 0.6rem;
+    letter-spacing: 0.1em;
+    text-transform: uppercase;
+    padding: 0.2rem 0.5rem;
+    border: 1px solid var(--border-2);
+    color: var(--text-muted);
+    white-space: nowrap;
+    margin-top: 2px;
+  }
+  .source-body {}
+  .source-url {
+    font-family: var(--mono);
+    font-size: 0.72rem;
+    color: var(--accent);
+    margin-bottom: 0.4rem;
+    word-break: break-all;
+  }
+  .source-excerpt {
+    font-size: 0.78rem;
+    color: var(--text-muted);
+    font-style: italic;
+    line-height: 1.5;
+  }
+  .source-conf {
+    font-family: var(--mono);
+    font-size: 0.6rem;
+    color: var(--text-muted);
+    letter-spacing: 0.06em;
+    white-space: nowrap;
+    padding-top: 2px;
+  }
+
+  /* ─── MANUAL CHECKS ─── */
+  .manual-section {
+    margin-bottom: 1.5px;
+    border: 1px solid var(--border);
+    background: var(--bg-2);
+  }
+  .manual-header {
+    padding: 1.25rem 1.5rem;
+    border-bottom: 1px solid var(--border);
+    display: flex;
+    align-items: center;
+    gap: 1rem;
+    background: var(--bg-3);
+  }
+  .manual-header-text h3 {
+    font-size: 0.9rem;
+    font-weight: 500;
+    margin-bottom: 0.2rem;
+  }
+  .manual-header-text p {
+    font-size: 0.75rem;
+    color: var(--text-muted);
+    font-family: var(--mono);
+  }
+  .manual-list { list-style: none; }
+  .manual-item {
+    padding: 1.25rem 1.5rem;
+    border-bottom: 1px solid var(--border);
+    display: grid;
+    grid-template-columns: 2rem 1fr auto;
+    gap: 1rem;
+    align-items: start;
+  }
+  .manual-item:last-child { border-bottom: none; }
+  .manual-num {
+    font-family: var(--mono);
+    font-size: 0.7rem;
+    color: var(--text-muted);
+    padding-top: 2px;
+  }
+  .manual-body {}
+  .manual-action {
+    font-size: 0.85rem;
+    color: var(--text-primary);
+    font-weight: 500;
+    margin-bottom: 0.3rem;
+  }
+  .manual-rationale {
+    font-size: 0.78rem;
+    color: var(--text-secondary);
+    margin-bottom: 0.4rem;
+    line-height: 1.5;
+  }
+  .manual-where {
+    font-family: var(--mono);
+    font-size: 0.68rem;
+    color: var(--accent);
+  }
+  .priority-tag {
+    font-family: var(--mono);
+    font-size: 0.58rem;
+    letter-spacing: 0.08em;
+    text-transform: uppercase;
+    padding: 0.2rem 0.5rem;
+    border: 1px solid;
+    white-space: nowrap;
+  }
+  .priority-high { color: var(--risk-high); border-color: var(--risk-high); }
+  .priority-medium { color: var(--risk-medium); border-color: var(--risk-medium); }
+  .priority-low { color: var(--unknown); border-color: var(--unknown); }
+
+  /* ─── REPORT DISCLAIMER ─── */
+  .report-disclaimer {
+    border: 1px solid var(--border);
+    background: var(--bg-3);
+    padding: 1.5rem;
+    margin-top: 2.5rem;
+  }
+  .report-disclaimer p {
+    font-family: var(--mono);
+    font-size: 0.72rem;
+    color: var(--text-muted);
+    line-height: 1.7;
+  }
+
+  /* ─── RESPONSIVE ─── */
+  @media (max-width: 700px) {
+    .steps-grid { grid-template-columns: 1fr; }
+    .is-isnt-grid { grid-template-columns: 1fr; }
+    .source-card { grid-template-columns: 1fr; }
+    .manual-item { grid-template-columns: 1fr; }
+    h1 { font-size: 2rem; }
+    .claims-table { font-size: 0.72rem; }
+  }
+
+  /* ─── PRINT ─── */
+  @media print {
+    body { background: white; color: #1a1a1a; }
+    nav { display: none; }
+    .report-nav { display: none; }
+    .risk-body { display: block !important; }
+  }
+
+  /* ─── TOAST ─── */
+  .toast {
+    position: fixed;
+    bottom: 2rem;
+    right: 2rem;
+    background: var(--bg-2);
+    border: 1px solid var(--border-2);
+    padding: 0.75rem 1.25rem;
+    font-family: var(--mono);
+    font-size: 0.75rem;
+    color: var(--text-secondary);
+    z-index: 999;
+    opacity: 0;
+    transform: translateY(8px);
+    transition: all 0.3s;
+    pointer-events: none;
+  }
+  .toast.show { opacity: 1; transform: translateY(0); }
+
+  /* ─── OVERVIEW SECTION ─── */
+  .overview-section {
+    border: 1px solid var(--border);
+    background: var(--bg-2);
+    margin-bottom: 1.5px;
+  }
+  .overview-grid {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 1.5px;
+    background: var(--border);
+    border-top: 1px solid var(--border);
+  }
+  .overview-cell {
+    background: var(--bg-2);
+    padding: 1.25rem 1.5rem;
+  }
+  .overview-cell-label {
+    font-family: var(--mono);
+    font-size: 0.62rem;
+    letter-spacing: 0.1em;
+    text-transform: uppercase;
+    color: var(--text-muted);
+    margin-bottom: 0.5rem;
+  }
+  .overview-cell-value {
+    font-size: 0.83rem;
+    color: var(--text-secondary);
+    line-height: 1.6;
+  }
+  .unanswered-list {
+    list-style: none;
+    margin-top: 0.75rem;
+  }
+  .unanswered-list li {
+    font-size: 0.8rem;
+    color: var(--text-secondary);
+    padding: 0.35rem 0;
+    border-bottom: 1px solid var(--border);
+    display: flex;
+    gap: 0.6rem;
+    align-items: flex-start;
+  }
+  .unanswered-list li:last-child { border-bottom: none; }
+  .unanswered-list li::before {
+    content: '?';
+    font-family: var(--mono);
+    font-size: 0.65rem;
+    color: var(--risk-medium);
+    padding-top: 2px;
+    flex-shrink: 0;
+  }
+</style>
+</head>
+<body>
+
+<!-- NAV -->
+<nav>
+  <div class="logo">
+    <span class="logo-dot"></span>
+    DD Copilot
+  </div>
+  <button class="nav-cta" onclick="showView('analyze')">Analyze Project</button>
+</nav>
+
+<!-- TOAST -->
+<div class="toast" id="toast"></div>
+
+<!-- ═══════════════════════════════════════════════════
+     VIEW: LANDING
+═══════════════════════════════════════════════════ -->
+<div class="view active" id="view-landing">
+  <div class="landing-hero">
+    <div class="eyebrow">First-pass due diligence assistant</div>
+    <h1>Research a crypto project<br>in <em>minutes, not hours.</em></h1>
+    <p class="hero-sub">
+      DD Copilot helps you understand what a project claims, identify common risk indicators, and determine what still requires manual verification — before you go deeper.
+    </p>
+    <div class="hero-actions">
+      <button class="btn-primary" onclick="showView('analyze')">Analyze a Project</button>
+      <button class="btn-secondary" onclick="showView('report')">View example report →</button>
+    </div>
+  </div>
+
+  <div class="how-section">
+    <div class="section-label">How it works</div>
+    <div class="steps-grid">
+      <div class="step">
+        <div class="step-num">01 — Input</div>
+        <h3>Paste a URL, symbol, or contract</h3>
+        <p>Provide what you have. A project website, a token ticker, or a contract address — or all three.</p>
+      </div>
+      <div class="step">
+        <div class="step-num">02 — Screen</div>
+        <h3>AI runs a structured risk check</h3>
+        <p>The assistant fetches content, extracts claims, and evaluates six risk categories with source grounding.</p>
+      </div>
+      <div class="step">
+        <div class="step-num">03 — Decide</div>
+        <h3>Review a structured report</h3>
+        <p>Every finding is labeled Verified, Inferred, or Unknown. You'll know exactly what still needs human review.</p>
+      </div>
+    </div>
+  </div>
+
+  <div class="is-isnt">
+    <div class="section-label">Scope of this tool</div>
+    <div class="is-isnt-grid">
+      <div class="is-col">
+        <div class="col-head">What it is</div>
+        <ul class="check-list">
+          <li>A first-pass research assistant</li>
+          <li>A structured crypto screening tool</li>
+          <li>A source-aware due diligence report</li>
+          <li>An honest uncertainty communicator</li>
+          <li>A red-flag detection aid</li>
+          <li>A manual verification guide</li>
+        </ul>
+      </div>
+      <div class="isnt-col">
+        <div class="col-head">What it is not</div>
+        <ul class="check-list">
+          <li>An investment advisor</li>
+          <li>A buy / sell signal generator</li>
+          <li>A price prediction engine</li>
+          <li>A smart contract security auditor</li>
+          <li>A guaranteed source of truth</li>
+          <li>A replacement for your own research</li>
+        </ul>
+      </div>
+    </div>
+  </div>
+
+  <div class="disclaimer-bar">
+    DD Copilot is a research tool. Nothing it produces constitutes financial advice. AI can hallucinate, websites can be misleading, and some risks cannot be detected automatically. Always conduct your own research.
+  </div>
+</div>
+
+<!-- ═══════════════════════════════════════════════════
+     VIEW: ANALYZE
+═══════════════════════════════════════════════════ -->
+<div class="view" id="view-analyze">
+  <div class="analyze-container">
+    <div class="analyze-header">
+      <button class="back-btn" onclick="showView('landing')" style="margin-bottom:1.5rem">← Back</button>
+      <h2>Analyze a Project</h2>
+      <p>Provide one or more inputs. More context produces a better report.</p>
+    </div>
+    <div class="input-card">
+      <div class="field">
+        <label>Project Website URL</label>
+        <input type="url" id="input-url" placeholder="https://example-project.io" />
+        <div class="field-hint">The main project homepage or documentation site</div>
+      </div>
+      <div class="field-divider">or</div>
+      <div class="field">
+        <label>Token Symbol</label>
+        <input type="text" id="input-symbol" placeholder="ETH, SOL, ARB..." />
+        <div class="field-hint">The token ticker as listed on major explorers</div>
+      </div>
+      <div class="field-divider">or</div>
+      <div class="field">
+        <label>Contract Address</label>
+        <input type="text" id="input-contract" placeholder="0x..." />
+        <div class="field-hint">EVM address — used to check onchain indicators</div>
+      </div>
+      <button class="analyze-btn" onclick="startAnalysis()">Run Preliminary Screening →</button>
+    </div>
+    <div class="analyze-notice">
+      Analysis typically takes 30–60 seconds. This produces a preliminary screening report, not a comprehensive audit. Some data sources may be unavailable.
+    </div>
+  </div>
+</div>
+
+<!-- ═══════════════════════════════════════════════════
+     VIEW: LOADING
+═══════════════════════════════════════════════════ -->
+<div class="view" id="view-loading">
+  <div class="loading-container">
+    <div class="loading-spinner"></div>
+    <div class="loading-title">Running preliminary screening</div>
+    <div class="loading-subtitle">Fetching sources, extracting claims, evaluating risk indicators</div>
+    <div class="loading-steps" id="loading-steps">
+      <div class="loading-step" id="ls-1">
+        <div class="step-icon">1</div>
+        Fetching project website
+      </div>
+      <div class="loading-step" id="ls-2">
+        <div class="step-icon">2</div>
+        Extracting key claims and content
+      </div>
+      <div class="loading-step" id="ls-3">
+        <div class="step-icon">3</div>
+        Running risk category checks
+      </div>
+      <div class="loading-step" id="ls-4">
+        <div class="step-icon">4</div>
+        Evaluating tokenomics signals
+      </div>
+      <div class="loading-step" id="ls-5">
+        <div class="step-icon">5</div>
+        Checking onchain indicators
+      </div>
+      <div class="loading-step" id="ls-6">
+        <div class="step-icon">6</div>
+        Assembling structured report
+      </div>
+    </div>
+    <div class="loading-caveat">Estimated time: 30–90 seconds depending on source availability</div>
+  </div>
+</div>
+
+<!-- ═══════════════════════════════════════════════════
+     VIEW: REPORT
+═══════════════════════════════════════════════════ -->
+<div class="view" id="view-report">
+  <div class="report-layout">
+
+    <!-- Report Nav -->
+    <div class="report-nav">
+      <button class="back-btn" onclick="showView('analyze')">← New Analysis</button>
+      <button class="export-btn" onclick="exportReport()">Export / Print Report</button>
+    </div>
+
+    <!-- Report Header -->
+    <div class="report-header">
+      <div class="report-meta">
+        <span class="report-date">Report generated: <span id="rpt-date"></span></span>
+        <span class="report-id">ID: rpt_demo_001</span>
+      </div>
+      <div class="report-project-name" id="rpt-name">NovaDEX Protocol</div>
+      <div class="report-category-tag" id="rpt-category">Category: Decentralized Exchange (DEX) · Layer 2</div>
+    </div>
+
+    <!-- Screening Outcome -->
+    <div class="outcome-card">
+      <span class="outcome-badge-large outcome-verify">Requires Manual Verification</span>
+      <div class="outcome-text">
+        <h4>Preliminary Screening Outcome</h4>
+        <p>Multiple claims remain unverifiable from public sources. Team identity is anonymous with no verifiable history. Tokenomics documentation is incomplete. The project shows some legitimate infrastructure indicators but insufficient evidence to assess core risks. Manual research is required before forming a view.</p>
+      </div>
+    </div>
+
+    <!-- Executive Summary -->
+    <div class="exec-summary">
+      <div class="section-title">Executive Summary</div>
+      <p>
+        NovaDEX Protocol presents itself as a Layer 2 decentralized exchange with a novel "concentrated liquidity routing" mechanism designed to reduce slippage for high-volume trades. The project targets DeFi power users and institutional-scale liquidity providers. A working testnet application was accessible at time of screening. The whitepaper is present but contains minimal technical specificity on the routing algorithm. The team is fully anonymous. No independent audit was found. Token distribution details are provided but lack vesting schedule specifics for team allocations. This screening identifies several indicators that require further human verification before forming any assessment.
+      </p>
+    </div>
+
+    <!-- Project Overview -->
+    <div class="overview-section">
+      <div style="padding: 1.25rem 1.5rem;">
+        <div class="section-title">Project Overview</div>
+      </div>
+      <div class="overview-grid">
+        <div class="overview-cell">
+          <div class="overview-cell-label">What it claims to do</div>
+          <div class="overview-cell-value">A DEX on an L2 network offering concentrated liquidity, cross-chain routing, and reduced gas costs for large swap volumes.</div>
+        </div>
+        <div class="overview-cell">
+          <div class="overview-cell-label">Who it is for</div>
+          <div class="overview-cell-value">DeFi traders seeking lower slippage on large positions; liquidity providers seeking higher capital efficiency.</div>
+        </div>
+        <div class="overview-cell">
+          <div class="overview-cell-label">Token utility</div>
+          <div class="overview-cell-value">Governance voting; fee discount for NOVA holders; staking for protocol revenue share. Utility is documented but implementation timeline is vague.</div>
+        </div>
+        <div class="overview-cell">
+          <div class="overview-cell-label">Claimed differentiators</div>
+          <div class="overview-cell-value">"Smart routing" across liquidity pools; intent-based order flow (claimed); MEV protection layer (unverified).</div>
+        </div>
+      </div>
+      <div style="padding: 1.25rem 1.5rem; border-top: 1px solid var(--border);">
+        <div class="overview-cell-label" style="margin-bottom:0.5rem">Unanswered questions at time of screening</div>
+        <ul class="unanswered-list">
+          <li>How does the routing algorithm differ from Uniswap V3 concentrated liquidity technically?</li>
+          <li>Who are the founders and what is their prior track record?</li>
+          <li>What are the exact vesting terms for the 18% team token allocation?</li>
+          <li>Has any third-party security audit been conducted? Where is the report?</li>
+          <li>What is the unlock schedule for presale investor tokens?</li>
+        </ul>
+      </div>
+    </div>
+
+    <!-- Risk Assessment -->
+    <div class="risk-section-title">Risk Assessment — 6 Categories</div>
+    <div class="risk-grid">
+
+      <!-- Risk 1: Clarity -->
+      <div class="risk-card" onclick="toggleRisk(this)">
+        <div class="risk-card-header">
+          <div class="risk-card-left">
+            <div class="risk-cat-name">Project Clarity</div>
+            <span class="risk-badge risk-medium">Medium</span>
+            <span class="verification-label vl-inferred">Inferred</span>
+          </div>
+          <span class="risk-card-expand">▾</span>
+        </div>
+        <div class="risk-body">
+          <p class="risk-reasoning">The project website is live and includes a whitepaper, a working testnet, and a documented roadmap. However, the whitepaper lacks technical depth on the core routing mechanism — the primary claimed differentiator. Marketing language is present but not overwhelming. The use case is coherent for the DeFi space. Roadmap milestones lack dates. Overall: project is legible but not technically verifiable from docs alone.</p>
+          <ul class="findings-list">
+            <li class="finding-item"><span class="finding-dot"></span><span>Whitepaper present — 14 pages, lacks algorithm specifics <span class="verification-label vl-verified" style="margin-left:0.5rem">Verified</span></span></li>
+            <li class="finding-item"><span class="finding-dot"></span><span>Testnet application accessible at time of screening <span class="verification-label vl-verified" style="margin-left:0.5rem">Verified</span></span></li>
+            <li class="finding-item"><span class="finding-dot"></span><span>Roadmap present but milestones undated <span class="verification-label vl-inferred" style="margin-left:0.5rem">Inferred</span></span></li>
+            <li class="finding-item"><span class="finding-dot"></span><span>GitHub linked — last commit 3 weeks ago <span class="verification-label vl-verified" style="margin-left:0.5rem">Verified</span></span></li>
+            <li class="finding-item"><span class="finding-dot"></span><span>"MEV protection" claim has no technical explanation <span class="verification-label vl-unknown" style="margin-left:0.5rem">Unknown</span></span></li>
+          </ul>
+        </div>
+      </div>
+
+      <!-- Risk 2: Team -->
+      <div class="risk-card" onclick="toggleRisk(this)">
+        <div class="risk-card-header">
+          <div class="risk-card-left">
+            <div class="risk-cat-name">Team &amp; Credibility</div>
+            <span class="risk-badge risk-high">High</span>
+            <span class="verification-label vl-unknown">Unknown</span>
+          </div>
+          <span class="risk-card-expand">▾</span>
+        </div>
+        <div class="risk-body">
+          <p class="risk-reasoning">The team page lists four contributors under pseudonyms only ("0xAlex", "Nova_Dev", "Luna", "CryptoSage"). No verifiable LinkedIn profiles, GitHub accounts tied to real identities, or prior project history was found. Anonymous teams are common in DeFi but represent an elevated trust risk — there is no recourse if core team members exit. This is a significant unknown that requires manual investigation.</p>
+          <ul class="findings-list">
+            <li class="finding-item"><span class="finding-dot"></span><span>Team page exists — 4 pseudonymous contributors listed <span class="verification-label vl-verified" style="margin-left:0.5rem">Verified</span></span></li>
+            <li class="finding-item"><span class="finding-dot"></span><span>No verifiable real identities or professional history found <span class="verification-label vl-unknown" style="margin-left:0.5rem">Unknown</span></span></li>
+            <li class="finding-item"><span class="finding-dot"></span><span>No prior project track record discoverable <span class="verification-label vl-unknown" style="margin-left:0.5rem">Unknown</span></span></li>
+            <li class="finding-item"><span class="finding-dot"></span><span>No advisors listed or verifiable <span class="verification-label vl-unknown" style="margin-left:0.5rem">Unknown</span></span></li>
+          </ul>
+        </div>
+      </div>
+
+      <!-- Risk 3: Tokenomics -->
+      <div class="risk-card" onclick="toggleRisk(this)">
+        <div class="risk-card-header">
+          <div class="risk-card-left">
+            <div class="risk-cat-name">Tokenomics Health</div>
+            <span class="risk-badge risk-medium">Medium</span>
+            <span class="verification-label vl-inferred">Inferred</span>
+          </div>
+          <span class="risk-card-expand">▾</span>
+        </div>
+        <div class="risk-body">
+          <p class="risk-reasoning">Token distribution is documented on the website: 18% team, 15% investors, 30% ecosystem/liquidity, 22% community, 15% treasury. The team and investor allocation (33% combined) is within common ranges but vesting schedule terms are not publicly disclosed. No on-chain vesting contract was identified. Inflation schedule is described as "controlled" with no specific emission rate. These omissions are meaningful — they are not disqualifying on their own but require verification.</p>
+          <ul class="findings-list">
+            <li class="finding-item"><span class="finding-dot"></span><span>Token distribution percentages documented <span class="verification-label vl-verified" style="margin-left:0.5rem">Verified</span></span></li>
+            <li class="finding-item"><span class="finding-dot"></span><span>Vesting schedule terms not publicly disclosed <span class="verification-label vl-unknown" style="margin-left:0.5rem">Unknown</span></span></li>
+            <li class="finding-item"><span class="finding-dot"></span><span>No on-chain vesting contract found or linked <span class="verification-label vl-unknown" style="margin-left:0.5rem">Unknown</span></span></li>
+            <li class="finding-item"><span class="finding-dot"></span><span>Emission rate described vaguely — "controlled release" <span class="verification-label vl-inferred" style="margin-left:0.5rem">Inferred</span></span></li>
+            <li class="finding-item"><span class="finding-dot"></span><span>33% team + investor allocation without vesting terms is a risk indicator <span class="verification-label vl-inferred" style="margin-left:0.5rem">Inferred</span></span></li>
+          </ul>
+        </div>
+      </div>
+
+      <!-- Risk 4: Contract -->
+      <div class="risk-card" onclick="toggleRisk(this)">
+        <div class="risk-card-header">
+          <div class="risk-card-left">
+            <div class="risk-cat-name">Contract &amp; Onchain Risk</div>
+            <span class="risk-badge risk-high">High</span>
+            <span class="verification-label vl-inferred">Inferred</span>
+          </div>
+          <span class="risk-card-expand">▾</span>
+        </div>
+        <div class="risk-body">
+          <p class="risk-reasoning">No independent security audit was found linked from the project website or discoverable via major audit firm registries. The contract address provided was found on the target network explorer. Contract source code is verified on-chain. However, the absence of a third-party audit for a DEX handling user funds is a significant risk indicator. Contract ownership has not been renounced. Proxy pattern detected — upgradeable contracts carry inherent trust assumptions about the deployer.</p>
+          <ul class="findings-list">
+            <li class="finding-item"><span class="finding-dot"></span><span>Contract source verified on explorer <span class="verification-label vl-verified" style="margin-left:0.5rem">Verified</span></span></li>
+            <li class="finding-item"><span class="finding-dot"></span><span>No third-party security audit found — significant risk indicator <span class="verification-label vl-unknown" style="margin-left:0.5rem">Unknown</span></span></li>
+            <li class="finding-item"><span class="finding-dot"></span><span>Proxy/upgradeable pattern detected — owner retains upgrade rights <span class="verification-label vl-verified" style="margin-left:0.5rem">Verified</span></span></li>
+            <li class="finding-item"><span class="finding-dot"></span><span>Contract ownership not renounced <span class="verification-label vl-verified" style="margin-left:0.5rem">Verified</span></span></li>
+            <li class="finding-item"><span class="finding-dot"></span><span>No honeypot indicators detected in basic checks <span class="verification-label vl-inferred" style="margin-left:0.5rem">Inferred</span></span></li>
+          </ul>
+        </div>
+      </div>
+
+      <!-- Risk 5: Market -->
+      <div class="risk-card" onclick="toggleRisk(this)">
+        <div class="risk-card-header">
+          <div class="risk-card-left">
+            <div class="risk-cat-name">Market / Behavior Notes</div>
+            <span class="risk-badge risk-medium">Medium</span>
+            <span class="verification-label vl-inferred">Inferred</span>
+          </div>
+          <span class="risk-card-expand">▾</span>
+        </div>
+        <div class="risk-body">
+          <p class="risk-reasoning">Token not yet listed on major CEXes at time of screening. DEX liquidity pool exists with approximately $180K TVL — thin for a DEX with institutional liquidity claims. Top 10 wallet concentration holds ~62% of supply, which is elevated. Volume patterns appear organic at this early stage but the dataset is insufficient for strong conclusions. No anomalous trading spikes detected in the 7-day window reviewed.</p>
+          <ul class="findings-list">
+            <li class="finding-item"><span class="finding-dot"></span><span>No major CEX listing found at time of screening <span class="verification-label vl-verified" style="margin-left:0.5rem">Verified</span></span></li>
+            <li class="finding-item"><span class="finding-dot"></span><span>DEX liquidity pool TVL ~$180K — low for institutional claims <span class="verification-label vl-inferred" style="margin-left:0.5rem">Inferred</span></span></li>
+            <li class="finding-item"><span class="finding-dot"></span><span>Top 10 wallets hold ~62% of supply <span class="verification-label vl-inferred" style="margin-left:0.5rem">Inferred</span></span></li>
+            <li class="finding-item"><span class="finding-dot"></span><span>Volume pattern: no anomalous spikes in 7-day window <span class="verification-label vl-inferred" style="margin-left:0.5rem">Inferred</span></span></li>
+          </ul>
+        </div>
+      </div>
+
+      <!-- Risk 6: Social -->
+      <div class="risk-card" onclick="toggleRisk(this)">
+        <div class="risk-card-header">
+          <div class="risk-card-left">
+            <div class="risk-cat-name">Social / Documentation Consistency</div>
+            <span class="risk-badge risk-low">Low</span>
+            <span class="verification-label vl-verified">Verified</span>
+          </div>
+          <span class="risk-card-expand">▾</span>
+        </div>
+        <div class="risk-body">
+          <p class="risk-reasoning">Twitter/X account is active with consistent messaging. Telegram community has approximately 4,200 members with regular updates from the team. Discord is live. Documentation (docs site) is present, reasonably complete, and consistent with website claims. No major contradictions between social messaging and official docs were found. No evidence of recycled or copy-pasted whitepaper content from other projects.</p>
+          <ul class="findings-list">
+            <li class="finding-item"><span class="finding-dot"></span><span>Twitter/X: active, ~12K followers, consistent messaging <span class="verification-label vl-verified" style="margin-left:0.5rem">Verified</span></span></li>
+            <li class="finding-item"><span class="finding-dot"></span><span>Telegram: ~4,200 members, regular updates <span class="verification-label vl-verified" style="margin-left:0.5rem">Verified</span></span></li>
+            <li class="finding-item"><span class="finding-dot"></span><span>Docs site present and internally consistent <span class="verification-label vl-verified" style="margin-left:0.5rem">Verified</span></span></li>
+            <li class="finding-item"><span class="finding-dot"></span><span>No whitepaper plagiarism detected in surface check <span class="verification-label vl-inferred" style="margin-left:0.5rem">Inferred</span></span></li>
+          </ul>
+        </div>
+      </div>
+
+    </div><!-- /risk-grid -->
+
+    <!-- Key Claims -->
+    <div class="claims-section">
+      <div class="risk-section-title">Key Claims Review</div>
+      <table class="claims-table">
+        <thead>
+          <tr>
+            <th>Claim</th>
+            <th>Evidence Found</th>
+            <th>Status</th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr>
+            <td class="claim-text">Novel concentrated liquidity routing reduces slippage by 40%</td>
+            <td>No benchmark or methodology published</td>
+            <td><span class="verification-label vl-unknown">Unknown</span></td>
+          </tr>
+          <tr>
+            <td class="claim-text">MEV protection layer active on mainnet</td>
+            <td>Claimed on website; no technical explanation or audit</td>
+            <td><span class="verification-label vl-unknown">Unknown</span></td>
+          </tr>
+          <tr>
+            <td class="claim-text">Testnet is live and functional</td>
+            <td>Accessed testnet directly during screening</td>
+            <td><span class="verification-label vl-verified">Verified</span></td>
+          </tr>
+          <tr>
+            <td class="claim-text">Smart contract audited by reputable firm</td>
+            <td>No audit report found; no firm named on site</td>
+            <td><span class="verification-label vl-unknown">Unknown</span></td>
+          </tr>
+          <tr>
+            <td class="claim-text">Protocol generates revenue from swap fees shared with stakers</td>
+            <td>Described in tokenomics doc; not yet live per roadmap</td>
+            <td><span class="verification-label vl-inferred">Inferred</span></td>
+          </tr>
+          <tr>
+            <td class="claim-text">Team has "combined 15 years DeFi experience"</td>
+            <td>Cannot verify — team is anonymous</td>
+            <td><span class="verification-label vl-unknown">Unknown</span></td>
+          </tr>
+        </tbody>
+      </table>
+    </div>
+
+    <!-- Sources / Evidence -->
+    <div class="sources-section">
+      <div class="risk-section-title">Evidence &amp; Sources</div>
+      <div class="source-list">
+        <div class="source-card">
+          <span class="source-type-tag">Website</span>
+          <div class="source-body">
+            <div class="source-url">https://novadex.io</div>
+            <div class="source-excerpt">"NovaDEX is the next generation DEX built on L2 with concentrated liquidity routing and MEV protection."</div>
+          </div>
+          <span class="source-conf">Confidence: Medium</span>
+        </div>
+        <div class="source-card">
+          <span class="source-type-tag">Whitepaper</span>
+          <div class="source-body">
+            <div class="source-url">https://novadex.io/whitepaper.pdf</div>
+            <div class="source-excerpt">14-page document. Technical sections lack algorithm specifics. Tokenomics distribution table present.</div>
+          </div>
+          <span class="source-conf">Confidence: Medium</span>
+        </div>
+        <div class="source-card">
+          <span class="source-type-tag">Onchain</span>
+          <div class="source-body">
+            <div class="source-url">Explorer: 0x3f4a...b7c2 (verified)</div>
+            <div class="source-excerpt">Contract source verified. Proxy pattern (EIP-1967). Ownership not renounced. No audit linked in contract metadata.</div>
+          </div>
+          <span class="source-conf">Confidence: High</span>
+        </div>
+        <div class="source-card">
+          <span class="source-type-tag">Social</span>
+          <div class="source-body">
+            <div class="source-url">https://twitter.com/NovaDEX_io</div>
+            <div class="source-excerpt">Active account. 12.1K followers. Tweets consistent with project claims. Last post: 18 hours ago.</div>
+          </div>
+          <span class="source-conf">Confidence: Medium</span>
+        </div>
+        <div class="source-card">
+          <span class="source-type-tag">Inferred</span>
+          <div class="source-body">
+            <div class="source-url">No audit firm registry match found</div>
+            <div class="source-excerpt">Searched CertiK, Quantstamp, Trail of Bits, Hacken, PeckShield registries. No audit found for this project or contract address.</div>
+          </div>
+          <span class="source-conf">Confidence: High</span>
+        </div>
+      </div>
+    </div>
+
+    <!-- Manual Verification -->
+    <div class="manual-section">
+      <div class="manual-header">
+        <div class="manual-header-text">
+          <h3>Manual Verification Required</h3>
+          <p>7 items — these cannot be verified automatically</p>
+        </div>
+      </div>
+      <ul class="manual-list">
+        <li class="manual-item">
+          <span class="manual-num">01</span>
+          <div class="manual-body">
+            <div class="manual-action">Verify team identity and prior track record</div>
+            <div class="manual-rationale">Team is fully anonymous. Manual research into pseudonym histories, GitHub contributions, and cross-referencing with prior projects is essential before trusting execution capacity.</div>
+            <div class="manual-where">Where: LinkedIn, GitHub, Twitter, Crypto Twitter / Farcaster history</div>
+          </div>
+          <span class="priority-tag priority-high">High</span>
+        </li>
+        <li class="manual-item">
+          <span class="manual-num">02</span>
+          <div class="manual-body">
+            <div class="manual-action">Request and review the full security audit report</div>
+            <div class="manual-rationale">No audit was found. For a DEX handling user funds, this is a prerequisite for meaningful risk assessment. Ask in community channels or contact the team directly for audit documentation.</div>
+            <div class="manual-where">Where: Community Discord/Telegram, direct team contact, audit firm registries</div>
+          </div>
+          <span class="priority-tag priority-high">High</span>
+        </li>
+        <li class="manual-item">
+          <span class="manual-num">03</span>
+          <div class="manual-body">
+            <div class="manual-action">Obtain vesting schedule details for team and investor allocations</div>
+            <div class="manual-rationale">33% of supply is allocated to team and investors with no disclosed vesting terms. Cliff periods, linear vs cliff vesting, and lock durations are critical for understanding sell pressure risk.</div>
+            <div class="manual-where">Where: Project docs, investor decks, team announcements, on-chain vesting contracts</div>
+          </div>
+          <span class="priority-tag priority-high">High</span>
+        </li>
+        <li class="manual-item">
+          <span class="manual-num">04</span>
+          <div class="manual-body">
+            <div class="manual-action">Test the technical routing claim with on-chain comparison</div>
+            <div class="manual-rationale">The "40% slippage reduction" claim requires empirical testing against comparable DEXes on equivalent trade sizes. This cannot be verified from documentation alone.</div>
+            <div class="manual-where">Where: Testnet / mainnet using identical trade parameters vs Uniswap V3</div>
+          </div>
+          <span class="priority-tag priority-medium">Medium</span>
+        </li>
+        <li class="manual-item">
+          <span class="manual-num">05</span>
+          <div class="manual-body">
+            <div class="manual-action">Review on-chain holder concentration and top wallet activity</div>
+            <div class="manual-rationale">Top 10 wallets hold ~62% of supply. Manually investigate whether these are exchange cold wallets, team wallets, or concentrated speculative holders using a blockchain explorer.</div>
+            <div class="manual-where">Where: Etherscan / block explorer token holder tab, Nansen, Arkham</div>
+          </div>
+          <span class="priority-tag priority-medium">Medium</span>
+        </li>
+        <li class="manual-item">
+          <span class="manual-num">06</span>
+          <div class="manual-body">
+            <div class="manual-action">Read the GitHub commit history for code authenticity</div>
+            <div class="manual-rationale">A linked GitHub exists. Manually review whether the commit history shows genuine development activity, who the contributors are, and whether code appears original vs forked without attribution.</div>
+            <div class="manual-where">Where: github.com/NovaDEX — commit history, contributors, issues</div>
+          </div>
+          <span class="priority-tag priority-medium">Medium</span>
+        </li>
+        <li class="manual-item">
+          <span class="manual-num">07</span>
+          <div class="manual-body">
+            <div class="manual-action">Verify the investor/partner claims independently</div>
+            <div class="manual-rationale">The website mentions "backed by leading DeFi funds" without naming them. This should be verified through fund portfolio pages or direct confirmation, not taken at face value.</div>
+            <div class="manual-where">Where: Named fund portfolio pages, AngelList, Crunchbase, direct outreach</div>
+          </div>
+          <span class="priority-tag priority-low">Low</span>
+        </li>
+      </ul>
+    </div>
+
+    <!-- Disclaimer -->
+    <div class="report-disclaimer">
+      <p>
+        This is a preliminary screening report generated by AI. It is not financial advice. Findings may be incomplete, inaccurate, or based on misleading source material. AI systems can hallucinate, project websites can be deceptive, and some risks cannot be detected automatically. The absence of a red flag does not indicate safety. Always conduct your own independent research before making any decision. This report was generated on <span id="disc-date"></span>.
+      </p>
+    </div>
+
+  </div><!-- /report-layout -->
+</div><!-- /view-report -->
+
+
+<script>
+  // ─── VIEW MANAGEMENT ───────────────────────────────────────────
+  function showView(name) {
+    document.querySelectorAll('.view').forEach(v => v.classList.remove('active'));
+    document.getElementById('view-' + name).classList.add('active');
+    window.scrollTo(0, 0);
+  }
+
+  // ─── RISK CARD TOGGLE ──────────────────────────────────────────
+  function toggleRisk(card) {
+    card.classList.toggle('open');
+  }
+
+  // ─── LOADING ANIMATION ─────────────────────────────────────────
+  function startAnalysis() {
+    const url = document.getElementById('input-url').value.trim();
+    const symbol = document.getElementById('input-symbol').value.trim();
+    const contract = document.getElementById('input-contract').value.trim();
+
+    if (!url && !symbol && !contract) {
+      showToast('Please provide at least one input');
+      return;
+    }
+
+    showView('loading');
+
+    const steps = ['ls-1', 'ls-2', 'ls-3', 'ls-4', 'ls-5', 'ls-6'];
+    let current = 0;
+
+    // Reset all steps
+    steps.forEach(id => {
+      const el = document.getElementById(id);
+      el.classList.remove('done', 'active');
+    });
+
+    const timings = [1200, 2800, 4600, 6200, 7800, 9200];
+
+    function activateStep(i) {
+      if (i > 0) document.getElementById(steps[i-1]).classList.remove('active');
+      document.getElementById(steps[i]).classList.add('active');
+    }
+
+    function completeStep(i) {
+      const el = document.getElementById(steps[i]);
+      el.classList.remove('active');
+      el.classList.add('done');
+      el.querySelector('.step-icon').textContent = '✓';
+    }
+
+    // Stagger step progress
+    steps.forEach((_, i) => {
+      setTimeout(() => activateStep(i), timings[i]);
+      setTimeout(() => completeStep(i), timings[i] + 1000);
+    });
+
+    // Go to report after all steps
+    setTimeout(() => {
+      const now = new Date();
+      document.getElementById('rpt-date').textContent = now.toLocaleString('en-US', {
+        year: 'numeric', month: 'short', day: 'numeric',
+        hour: '2-digit', minute: '2-digit'
+      });
+      document.getElementById('disc-date').textContent = now.toLocaleDateString('en-US', {
+        year: 'numeric', month: 'long', day: 'numeric'
+      });
+      showView('report');
+    }, 11500);
+  }
+
+  // ─── EXPORT ─────────────────────────────────────────────────────
+  function exportReport() {
+    showToast('Opening print dialog...');
+    setTimeout(() => window.print(), 400);
+  }
+
+  // ─── TOAST ──────────────────────────────────────────────────────
+  function showToast(msg) {
+    const t = document.getElementById('toast');
+    t.textContent = msg;
+    t.classList.add('show');
+    setTimeout(() => t.classList.remove('show'), 2800);
+  }
+
+  // ─── INIT ───────────────────────────────────────────────────────
+  // Pre-set dates on report
+  window.addEventListener('DOMContentLoaded', () => {
+    const now = new Date();
+    document.getElementById('rpt-date').textContent = now.toLocaleString('en-US', {
+      year: 'numeric', month: 'short', day: 'numeric',
+      hour: '2-digit', minute: '2-digit'
+    });
+    document.getElementById('disc-date').textContent = now.toLocaleDateString('en-US', {
+      year: 'numeric', month: 'long', day: 'numeric'
+    });
+
+    // Open first two risk cards by default for demo
+    const cards = document.querySelectorAll('.risk-card');
+    if (cards[0]) cards[0].classList.add('open');
+    if (cards[1]) cards[1].classList.add('open');
+  });
+</script>
+</body>
+</html>

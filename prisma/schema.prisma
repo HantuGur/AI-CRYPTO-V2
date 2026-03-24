@@ -1,0 +1,134 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+// ─── Analysis ────────────────────────────────────────────────────────────────
+// Top-level record created when a user submits an input.
+// status moves: pending → processing → complete | failed
+
+model Analysis {
+  id              String   @id @default(cuid())
+  createdAt       DateTime @default(now())
+  status          String   @default("pending") // AnalysisStatus
+
+  // Raw user inputs — all optional, at least one required at app level
+  inputUrl        String?
+  inputSymbol     String?
+  inputContract   String?
+
+  // Only set when status = 'failed'
+  errorMessage    String?
+
+  report          Report?
+}
+
+// ─── Report ──────────────────────────────────────────────────────────────────
+// Created once analysis completes. One-to-one with Analysis.
+
+model Report {
+  id                String   @id @default(cuid())
+  createdAt         DateTime @default(now())
+
+  analysisId        String   @unique
+  analysis          Analysis @relation(fields: [analysisId], references: [id])
+
+  projectName       String
+  projectCategory   String
+  executiveSummary  String
+
+  // ScreeningOutcome: skip | watch | verify | caution
+  screeningOutcome  String
+  outcomeRationale  String
+
+  // ProjectOverview stored as JSON — avoids a separate table for a simple object
+  projectOverview   Json
+
+  // Relations
+  riskSections      RiskSection[]
+  claims            Claim[]
+  sources           Source[]
+  manualChecks      ManualCheck[]
+}
+
+// ─── RiskSection ─────────────────────────────────────────────────────────────
+// One row per risk category (max 6 per report).
+
+model RiskSection {
+  id                 String    @id @default(cuid())
+  reportId           String
+  report             Report    @relation(fields: [reportId], references: [id])
+
+  // RiskCategory: clarity | team | tokenomics | contract | market | social
+  category           String
+  // RiskLevel: low | medium | high | unknown
+  riskLevel          String
+  reasoning          String    @db.Text
+  // VerificationStatus: verified | inferred | unknown
+  verificationStatus String
+
+  findings           Finding[]
+}
+
+// ─── Finding ─────────────────────────────────────────────────────────────────
+// Individual bullet-point findings within a RiskSection.
+
+model Finding {
+  id                 String      @id @default(cuid())
+  riskSectionId      String
+  riskSection        RiskSection @relation(fields: [riskSectionId], references: [id])
+
+  text               String
+  verificationStatus String
+  sourceUrl          String?
+}
+
+// ─── Claim ───────────────────────────────────────────────────────────────────
+// A specific claim the project makes, with evidence assessment.
+
+model Claim {
+  id                 String  @id @default(cuid())
+  reportId           String
+  report             Report  @relation(fields: [reportId], references: [id])
+
+  claimText          String
+  evidence           String? // What we found, or null
+  verificationStatus String
+  sourceUrl          String?
+}
+
+// ─── Source ──────────────────────────────────────────────────────────────────
+// Every URL or data source used to build this report.
+
+model Source {
+  id         String   @id @default(cuid())
+  reportId   String
+  report     Report   @relation(fields: [reportId], references: [id])
+
+  url        String?
+  // SourceType: website | whitepaper | onchain | social | inferred
+  sourceType String
+  excerpt    String?  @db.Text
+  // ConfidenceLevel: high | medium | low
+  confidence String
+  accessedAt DateTime @default(now())
+}
+
+// ─── ManualCheck ─────────────────────────────────────────────────────────────
+// Specific actions the user must perform themselves.
+
+model ManualCheck {
+  id           String  @id @default(cuid())
+  reportId     String
+  report       Report  @relation(fields: [reportId], references: [id])
+
+  action       String
+  rationale    String  @db.Text
+  whereToCheck String?
+  // ManualCheckPriority: high | medium | low
+  priority     String
+}
